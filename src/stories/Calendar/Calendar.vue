@@ -172,7 +172,7 @@
 				</template>
 				<template #event="{ event, view }">me</template>
 				<template #time-cell="{ hours, minutes }">
-					<div>
+					<div class="vuecal__time-cell-line">
 						<span v-if="hours">
 							{{
 								new Date(new Date().setHours(hours, minutes, 0)).formatTime(
