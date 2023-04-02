@@ -1,16 +1,21 @@
+import { action } from '@storybook/addon-actions'
 import UiCalendar from './Calendar.vue'
 
 export default {
 	title: 'Calendar',
 	component: UiCalendar,
+	methods: { action },
 }
 
 const Template = (args) => ({
 	components: { UiCalendar },
 	setup() {
-		return { args }
+		const updateTimezone = (timezoneId: string) => {
+			action('updateTimezone')(timezoneId)
+		}
+		return { args, updateTimezone }
 	},
-	template: '<ui-calendar v-bind="args" />',
+	template: '<ui-calendar v-bind="args" @updateTimezone="updateTimezone" />',
 })
 
 export const General = Template.bind({})
@@ -152,6 +157,7 @@ WithActiveEvents.args = {
 			class: 'new-data',
 		},
 	],
+	updateTimezone: (data: any) => console.log('test', data),
 }
 export const WithDisableCreation = Template.bind({})
 WithDisableCreation.args = {

@@ -23,6 +23,17 @@
 				/>
 			</div>
 			<div>
+				<select
+					name="pets"
+					id="pet-select"
+					v-model="timezoneSelected"
+					@update:model-value="updateTimezone"
+				>
+					<option value="">--Please choose an option--</option>
+					<option v-for="option of timezonesList" :value="option">
+						{{ option }}
+					</option>
+				</select>
 				<Button primary @click="activeView = 'month'" label="month" />
 				<Button primary @click="activeView = 'week'" label="week" />
 			</div>
@@ -173,6 +184,7 @@ import Button from '../Button/Button.vue'
 import { createPopper } from '@popperjs/core'
 import { IEventData, TEvent } from './helper/types'
 import { MonthEvent } from './components'
+import { timezones } from './helper/timezones'
 
 interface Props {
 	disableViews?: 'day' | 'week' | 'month' | 'year' | 'years'[]
@@ -187,6 +199,19 @@ export default defineComponent({
 </script>
 <script lang="ts" setup>
 const props = defineProps<Props>()
+const emit =
+	defineEmits<{
+		(e: 'updateTimezone', timezoneId: string): void
+	}>()
+
+//
+const timezonesList = ref(timezones)
+const timezoneSelected = ref('')
+const updateTimezone = (timezoneId: any) => {
+	emit('updateTimezone', timezoneId)
+}
+//
+
 const vuecal = ref<any>(null)
 const activeView = ref<'day' | 'week' | 'month' | 'year' | 'year'>('month')
 const monthLabel = computed(() => {
