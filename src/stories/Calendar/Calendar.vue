@@ -38,7 +38,7 @@
 				<Button primary @click="activeView = 'week'" label="week" />
 			</div>
 		</div>
-		<div class="relative">
+		<div class="relative h-[502px]">
 			<transition @after-leave="tooltipAfterLeave">
 				<div
 					ref="tooltip"
@@ -171,6 +171,17 @@
 					</div>
 				</template>
 				<template #event="{ event, view }">me</template>
+				<template #time-cell="{ hours, minutes }">
+					<div>
+						<span v-if="hours">
+							{{
+								new Date(new Date().setHours(hours, minutes, 0)).formatTime(
+									'h {am}'
+								)
+							}}
+						</span>
+					</div>
+				</template>
 			</vue-cal>
 		</div>
 	</div>
@@ -398,6 +409,9 @@ const showMore = (data: any, clickEvent: any) => {
 		margin-left: -2px;
 		width: calc(100% + 4px);
 	}
+}
+.vuecal__all-day-text span {
+	display: none;
 }
 .vuecal__event {
 	background-color: #f6f7f9;
