@@ -1,10 +1,9 @@
 <template>
 	<div class="relative max-w-[834px]">
-		<h1>{{ title }}</h1>
 		<div class="flex py-4">
 			<Button
 				primary
-				@click="selectedDate = new Date('2023-04-03')"
+				@click=";(selectedDate = new Date('2023-04-03')), closeTooltip()"
 				label="Set date to - 2023-04-03"
 			/>
 		</div>
@@ -29,90 +28,58 @@
 			</div>
 		</div>
 		<div class="relative">
-			<!-- <div
-				class="
-					absolute
-					left-0
-					top-0
-					w-full
-					h-full
-					bg-gray-900/70
-					z-10
-					transition-opacity
-					flex
-					justify-center
-					items-center
-				"
-				:class="[
-					isTooltipOpened ? 'opacity-100' : 'opacity-0 pointer-events-none',
-				]"
-				@click.self=";(isTooltipOpened = false), (isShowMore = false)"
-			>
-				<div class="flex flex-col gap-2 p-6 rounded-lg bg-white shadow-md">
-					<template v-if="isShowMore">
+			<transition @after-leave="tooltipAfterLeave">
+				<div
+					ref="tooltip"
+					class="
+						absolute
+						p-6
+						bg-white
+						border border-gray-200
+						rounded-xl
+						z-10
+						shadow-md
+						max-w-xs
+					"
+					v-show="isShowTooltip"
+				>
+					{{
+						isShowMore ? 'additional info' : selectedEvent ? 'Event:' : 'Cell:'
+					}}
+					<div v-if="isShowMore">
+						<p>More info</p>
 						<ul>
 							<li v-for="event of hiddenEvents">
 								{{
-									`${event?.start.getHours()}:${event?.start.getMinutes()}-${event?.end.getHours()}:${event?.end.getMinutes()}`
+									`${new Date(event.start).getFullYear()}/${new Date(
+										event.start
+									).getMonth()}/${new Date(event.start).getDate()}`
+								}}-{{
+									`${new Date(event.end).getFullYear()}/${new Date(
+										event.end
+									).getMonth()}/${new Date(event.end).getDate()}`
 								}}
 							</li>
 						</ul>
-					</template>
-					<template v-else>
-						<h2>{{ selectedEvent?.title }}</h2>
-						<div class="flex gap-1">
-							<strong>Start date&time:</strong>
-							<span>{{
-								selectedEvent?.start.format('YYYY/MM/D hh:mm{am}')
-							}}</span>
-						</div>
-						<div class="flex gap-1">
-							<strong>End date&time:</strong>
-							<span>{{
-								selectedEvent?.end.format('YYYY/MM/D hh:mm{am}')
-							}}</span>
-						</div>
-					</template>
-				</div>
-			</div> -->
-			<div
-				ref="tooltip"
-				class="
-					absolute
-					p-6
-					bg-white
-					rounded-xl
-					z-10
-					shadow-md
-					max-w-xs
-					opacity-0
-					pointer-events-none
-					data-[show=true]:opacity-100 data-[show=true]:pointer-events-auto
-					transition-opacity
-				"
-			>
-				{{
-					isShowMore ? 'additional info' : selectedEvent ? 'Event:' : 'Cell:'
-				}}
-				<div v-if="isShowMore">
-					<p>More info</p>
-					<ul>
-						<li v-for="event of hiddenEvents">
+					</div>
+					<div v-else-if="selectedEvent">
+						<p>
 							{{
-								`${new Date(event.start).getFullYear()}/${new Date(
-									event.start
-								).getMonth()}/${new Date(event.start).getDate()}`
-							}}-{{
-								`${new Date(event.end).getFullYear()}/${new Date(
-									event.end
-								).getMonth()}/${new Date(event.end).getDate()}`
+								selectedEvent.start.getHours() +
+								':' +
+								selectedEvent.start.getMinutes()
 							}}
-						</li>
-					</ul>
+							-
+							{{
+								selectedEvent.end.getHours() +
+								':' +
+								selectedEvent.end.getMinutes()
+							}}
+						</p>
+					</div>
+					<p v-else-if="!selectedEvent">Tooltip content</p>
 				</div>
-				<p v-else-if="selectedEvent">{{ selectedEvent.start }}</p>
-				<p v-else-if="!selectedEvent">Tooltip content</p>
-			</div>
+			</transition>
 			<vue-cal
 				ref="vuecal"
 				:events="events"
@@ -124,6 +91,8 @@
 				:snapToTime="5"
 				:timeStep="60"
 				timeFormat="HH:mm"
+				showAllDayEvents
+				eventsOnMonthView
 				hideViewSelector
 				hideTitleBar
 				todayButton
@@ -138,9 +107,6 @@
 				cell-contextmenu
 				@cell-contextmenu="cellContextMenu"
 			>
-				<!-- <template #events-count="{ events, view }">
-				<span> 1_{{ customEventsCount(events) }} </span>
-			</template> -->
 				<template #cell-content="{ cell, view, events }">
 					<div
 						class="
@@ -157,64 +123,34 @@
 							{{ cell.content }}
 						</span>
 						<div
-							class="
-								flex flex-col
-								w-full
-								gap-0.5
-								pt-8
-								text-gray-50 text-ellipsis
-								overflow-hidden
-								whitespace-nowrap
-							"
+							class="flex flex-col w-full gap-0.5 pt-8 text-gray-50"
 							v-if="events.length && view.id === 'month'"
 						>
-							<button
-								type="button"
-								@click.stop="onEventClick(events[0], $event)"
-								class="px-2 py-0.5 rounded bg-gray-400 w-full !text-left"
-								:title="events[0].title"
-							>
-								{{
-									events[0].start.format('H{am}') +
-									'-' +
-									events[0].end.format('H{am}')
-								}}
-							</button>
+							<MonthEvent
+								:event="events[0]"
+								:data="cell"
+								@on-click="onEventClick"
+							/>
 							<div
 								v-if="events.length > 1"
 								class="flex items-center gap-1 w-full"
 							>
-								<button
-									type="button"
-									@click.stop="onEventClick(events[1], $event)"
-									class="
-										px-2
-										py-0.5
-										rounded
-										bg-gray-400
-										text-ellipsis
-										overflow-hidden
-										whitespace-nowrap
-										!text-left
-									"
+								<MonthEvent
+									:event="events[1]"
+									:data="cell"
+									@on-click="onEventClick"
 									:class="[events.length > 2 ? 'w-1/2' : 'w-full']"
-									:title="events[1].title"
-								>
-									{{
-										`${events[1].start.format('H{am}')}-${events[1].end.format(
-											'H{am}'
-										)}`
-									}}
-								</button>
+								/>
 								<button
 									v-if="events.length > 2"
 									type="button"
-									@click.stop="showMore(events.slice(2), $event)"
+									@click.stop="showMore(events, $event)"
 									class="
-										text-red-700 text-ellipsis
+										text-[#FF5E46] text-ellipsis
 										overflow-hidden
 										whitespace-nowrap
 										m-0
+										hover:text-[#FF5E46]/80
 									"
 								>
 									+ {{ events.length - 2 }} more
@@ -235,6 +171,38 @@ import VueCal from 'vue-cal'
 import 'vue-cal/dist/vuecal.css'
 import Button from '../Button/Button.vue'
 import { createPopper } from '@popperjs/core'
+import { IEventData, TEvent } from './helper/types'
+import { MonthEvent } from './components'
+
+interface Props {
+	disableViews?: 'day' | 'week' | 'month' | 'year' | 'years'[]
+	events: TEvent[]
+	disableCreation?: boolean
+}
+
+export default defineComponent({
+	name: 'CalendarComponent',
+	components: { VueCal },
+})
+</script>
+<script lang="ts" setup>
+const props = defineProps<Props>()
+const vuecal = ref<any>(null)
+const activeView = ref<'day' | 'week' | 'month' | 'year' | 'year'>('month')
+const monthLabel = computed(() => {
+	const { startDate, endDate } = vuecal.value?.view ?? {}
+	const [startMonth, endMonth] = [startDate, endDate].map((date) =>
+		date?.getMonth()
+	)
+	const getFullMonth = (date: Date) => {
+		return date?.toLocaleString('default', { month: 'long' })
+	}
+	const startMonthName = getFullMonth(startDate)
+	if (startMonth === endMonth) return startMonthName
+	return `${startMonthName}-${getFullMonth(endDate)}`
+})
+const selectedDate = ref<Date>(new Date())
+
 const tooltip = ref<any>(null)
 const tooltipTarget = ref<any>(null)
 const popperInstance = computed(() => {
@@ -256,141 +224,50 @@ const popperInstance = computed(() => {
 		],
 	})
 })
-const generatePopper = (block: Element) => {
-	tooltipTarget.value = block
-	// createPopper(block, tooltip.value, {
-	// 	placement: 'auto',
-	// })
-	popperInstance.value?.forceUpdate()
-}
-
-interface Props {
-	title?: string
-	disableViews?: 'day' | 'week' | 'month' | 'year' | 'years'[]
-}
-
-type TEvent = {
-	start: Date
-	end: Date
-	title?: string
-}
-
-type TDateMethod = {
-	format: (format: string) => any
-}
-
-interface IEventData {
-	allDay: boolean
-	class: string
-	end: Date & TDateMethod
-	start: Date & TDateMethod
-	focused: boolean
-	title: string
-	_eid: string
-}
-
-export default defineComponent({
-	name: 'CalendarComponent',
-	components: { VueCal },
-})
-</script>
-<script lang="ts" setup>
-defineProps<Props>()
-const vuecal = ref<any>(null)
-const activeView = ref<'day' | 'week' | 'month' | 'year' | 'year'>('month')
-const monthLabel = computed(() => {
-	const startDate = vuecal.value?.view.startDate
-	const endDate = vuecal.value?.view.endDate
-	const startDateMonth = vuecal.value?.view.startDate.getMonth()
-	const endDateMonth = vuecal.value?.view.endDate.getMonth()
-	const getFullMonth = (date: Date) => {
-		return date?.toLocaleString('default', { month: 'long' })
+const generatePopper = (): Promise<any> => {
+	if (isShowTooltip.value) {
+		console.log('update')
+		return popperInstance.value?.update()
+	} else {
+		setTimeout(() => {
+			console.log('forceUpdate')
+			popperInstance.value?.forceUpdate()
+		})
+		return Promise.resolve()
 	}
-	if (startDateMonth === endDateMonth) return getFullMonth(startDate)
-	return getFullMonth(startDate) + '-' + getFullMonth(endDate)
-})
-const selectedDate = ref<Date>(new Date())
-const events = ref<TEvent[]>([
-	{
-		start: new Date('2023-04-01 12:30'),
-		end: new Date('2023-04-01 13:45'),
-		title: 'Some title',
-	},
-	{
-		start: new Date('2023-04-01 14:30'),
-		end: new Date('2023-04-01 15:00'),
-		title: 'Some title',
-	},
-	{
-		start: new Date('2023-04-01 16:00'),
-		end: new Date('2023-04-01 17:10'),
-		title: 'Some title',
-	},
-	{
-		start: new Date('2023-04-01 17:20'),
-		end: new Date('2023-04-01 18:00'),
-		title: 'Some title',
-	},
-	//
-	{
-		start: new Date('2023-04-02 12:30'),
-		end: new Date('2023-04-02 13:45'),
-		title: 'Some title',
-	},
-	{
-		start: new Date('2023-04-02 14:30'),
-		end: new Date('2023-04-02 15:00'),
-		title: 'Some title',
-	},
-	//
-	{
-		start: new Date('2023-04-03 12:30'),
-		end: new Date('2023-04-03 13:45'),
-		title: 'Some title',
-	},
-	{
-		start: new Date('2023-04-03 14:30'),
-		end: new Date('2023-04-03 15:00'),
-		title: 'Some title',
-	},
-	{
-		start: new Date('2023-04-03 16:00'),
-		end: new Date('2023-04-03 17:10'),
-		title: 'Some title',
-	},
-	//
-	{
-		start: new Date('2023-04-04 12:30'),
-		end: new Date('2023-04-04 13:45'),
-		title: 'Some title',
-	},
-])
+}
 
-const isTooltipOpened = ref(false)
+const isShowTooltip = ref(false)
 const selectedEvent = ref<IEventData | null>(null)
 
-const resetTooltip = () => {
-	isShowMore.value = false
+const tooltipAfterLeave = () => {
 	selectedEvent.value = null
-	tooltip.value?.setAttribute('data-show', false)
-}
-const openTooltip = (target: any) => {
-	tooltip.value?.setAttribute('data-show', true)
-	isTooltipOpened.value = true
-	generatePopper(target)
+	isShowMore.value = false
 }
 
-const onEventClick = (eventData: any, clickEvent: any) => {
-	console.log('onEventClick', eventData, clickEvent)
-	resetTooltip()
-	selectedEvent.value = eventData
-	openTooltip(clickEvent.target)
+const closeTooltip = () => {
+	isShowTooltip.value = false
 }
+const openTooltip = (target: any) => {
+	tooltipTarget.value = target
+	if (props.disableCreation) return Promise.reject()
+	return new Promise((resolve, reject) => {
+		try {
+			generatePopper().then(() => {
+				isShowTooltip.value = true
+				tooltipAfterLeave()
+				return resolve({ status: 'success' })
+			})
+		} catch (e: any) {
+			reject(e)
+		}
+	})
+}
+
 const onEventDblclick = (eventData: any, clickEvent: any) => {
 	console.log('onEventDblclick', eventData, clickEvent)
 
 	selectedEvent.value = eventData
-	// isTooltipOpened.value = true
 }
 const eventTitleChange = (e: any, clickEvent: any) => {
 	console.log('eventTitleChange', e, clickEvent)
@@ -401,17 +278,21 @@ const eventDurationChange = (e: any, clickEvent: any) => {
 const eventDrop = (e: any) => {
 	console.log('eventDrop', e)
 }
-const cellClick = (e: any, clickEvent: any) => {
-	console.log('cellClick', e, clickEvent)
-	resetTooltip()
-}
 const celldblClick = (e: any, clickEvent: any) => {
 	console.log('celldblClick', e, clickEvent)
-	resetTooltip()
+}
+// working methods
+const onEventClick = (eventData: any, clickEvent: any) => {
+	console.log('onEventClick', eventData, clickEvent)
+	if (selectedEvent.value?.start === eventData.start) return closeTooltip()
+	openTooltip(clickEvent.target).then(() => (selectedEvent.value = eventData))
+}
+const cellClick = (e: any, clickEvent: any) => {
+	console.log('cellClick', e, clickEvent)
+	closeTooltip()
 }
 const cellContextMenu = (e: any) => {
 	console.log('cellContextMenu', e)
-	resetTooltip()
 	const target = e.e.target.classList.contains('.vuecal__cell-content')
 		? e.e.target
 		: e.e.target.closest('.vuecal__cell-content')
@@ -420,25 +301,26 @@ const cellContextMenu = (e: any) => {
 }
 const isShowMore = ref(false)
 const hiddenEvents = ref<TEvent[]>([])
-const showMore = (data: any, e: any) => {
-	console.log('showMore', data, e)
-	resetTooltip()
-	openTooltip(e.target)
-
-	isShowMore.value = true
-	hiddenEvents.value = data
-}
-
-const customEventsCount = (data: any) => {
-	console.log('customEventsCount', data)
-	return 'customEventsCount'
-}
-const cellContent = (cellData: any, eventsData: any) => {
-	console.log('cellContent', cellData, eventsData)
-	return 'cellContent'
+const showMore = (data: any, clickEvent: any) => {
+	console.log('showMore', data, clickEvent)
+	openTooltip(clickEvent.target).then(() => {
+		isShowMore.value = true
+		hiddenEvents.value = data
+	})
 }
 </script>
-<style>
+<style lang="scss">
+/* we will explain what these classes do next! */
+.v-enter-active,
+.v-leave-active {
+	transition: opacity 0.15s ease;
+}
+
+.v-enter-from,
+.v-leave-to {
+	opacity: 0;
+}
+
 /* Green-theme. */
 .vuecal__menu,
 .vuecal__cell-events-count {
@@ -468,8 +350,47 @@ const cellContent = (cellData: any, eventsData: any) => {
 }
 
 /* CUSTOM */
-.vuecal--month-view .vuecal__cell-content {
-	height: 76px;
-	width: 120px;
+.vuecal--month-view {
+	.vuecal__cell-content {
+		height: 76px;
+		width: 120px;
+	}
+	.vuecal__cell-events {
+		display: none;
+	}
+	.event-start {
+		border-top-right-radius: 0;
+		border-bottom-right-radius: 0;
+		width: calc(100% + 3px);
+	}
+	.event-end {
+		border-top-left-radius: 0;
+		border-bottom-left-radius: 0;
+		margin-left: -2px;
+	}
+	.event-middle {
+		border-radius: 0;
+		margin-left: -2px;
+		width: calc(100% + 4px);
+	}
+}
+.vuecal__event {
+	background-color: #f6f7f9;
+	&:hover {
+		background-color: #f0f2f5;
+	}
+
+	.vuecal__event-resize-handle {
+		background-color: #dde0e0;
+	}
+}
+.new-data {
+	background-color: #ffefed;
+	&:hover {
+		background-color: #ffe8e5;
+	}
+	.vuecal__event-resize-handle {
+		background-color: #ffd0c8;
+	}
 }
 </style>
