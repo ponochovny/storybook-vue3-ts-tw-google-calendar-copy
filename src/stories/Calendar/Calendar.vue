@@ -40,6 +40,16 @@
 		</div>
 		<div class="relative h-[502px]">
 			<transition @after-leave="tooltipAfterLeave">
+				<CalendarTooltip
+					ref="tooltip"
+					v-show="isShowTooltip"
+					:selectedDate="selectedDate"
+					:isCreateNew="isCreateNewData"
+					@save="createEventHandler"
+					@close="closeTooltip"
+				/>
+			</transition>
+			<!-- <transition @after-leave="tooltipAfterLeave">
 				<div
 					ref="tooltip"
 					class="
@@ -90,7 +100,7 @@
 					</div>
 					<p v-else-if="!selectedEvent">Tooltip content</p>
 				</div>
-			</transition>
+			</transition> -->
 			<vue-cal
 				ref="vuecal"
 				:events="events"
@@ -170,7 +180,15 @@
 						</div>
 					</div>
 				</template>
-				<template #event="{ event, view }">me</template>
+				<template #event="{ event, view }">
+					<div class="text-[11px]/[16px] text-left pt-2 pl-3">
+						{{
+							event.start.formatTime('h:mm{am}') +
+							'-' +
+							event.end.formatTime('h:mm{am}')
+						}}
+					</div>
+				</template>
 				<template #time-cell="{ hours, minutes }">
 					<div class="vuecal__time-cell-line">
 						<span v-if="hours">
@@ -195,6 +213,7 @@ import Button from '../Button/Button.vue'
 import { createPopper } from '@popperjs/core'
 import { IEventData, TEvent } from './helper/types'
 import { MonthEvent } from './components'
+import CalendarTooltip from '../CalendarTooltip/CalendarTooltip.vue'
 import { timezones } from './helper/timezones'
 
 interface Props {
@@ -213,6 +232,7 @@ const props = defineProps<Props>()
 const emit =
 	defineEmits<{
 		(e: 'updateTimezone', timezoneId: string): void
+		(e: 'newEvent', data: TEvent): void
 	}>()
 
 //
@@ -242,7 +262,7 @@ const selectedDate = ref<Date>(new Date())
 const tooltip = ref<any>(null)
 const tooltipTarget = ref<any>(null)
 const popperInstance = computed(() => {
-	return createPopper(tooltipTarget.value as Element, tooltip.value, {
+	return createPopper(tooltipTarget.value as Element, tooltip.value.$el, {
 		placement: 'auto',
 		modifiers: [
 			{
@@ -274,11 +294,19 @@ const generatePopper = (): Promise<any> => {
 }
 
 const isShowTooltip = ref(false)
+const isCreateNewData = ref(false)
 const selectedEvent = ref<IEventData | null>(null)
+
+const createEventHandler = (data: TEvent) => {
+	console.log('createEventHandler', data)
+	emit('newEvent', data)
+}
 
 const tooltipAfterLeave = () => {
 	selectedEvent.value = null
 	isShowMore.value = false
+	hiddenEvents.value = []
+	isCreateNewData.value = false
 }
 
 const closeTooltip = () => {
@@ -286,7 +314,6 @@ const closeTooltip = () => {
 }
 const openTooltip = (target: any) => {
 	tooltipTarget.value = target
-	if (props.disableCreation) return Promise.reject()
 	return new Promise((resolve, reject) => {
 		try {
 			generatePopper().then(() => {
@@ -314,8 +341,11 @@ const eventDurationChange = (e: any, clickEvent: any) => {
 const eventDrop = (e: any) => {
 	console.log('eventDrop', e)
 }
-const celldblClick = (e: any, clickEvent: any) => {
+const celldblClick = (e: Date, clickEvent: any) => {
 	console.log('celldblClick', e, clickEvent)
+
+	activeView.value = 'week'
+	selectedDate.value = e
 }
 // working methods
 const onEventClick = (eventData: any, clickEvent: any) => {
@@ -328,16 +358,28 @@ const cellClick = (e: any, clickEvent: any) => {
 	closeTooltip()
 }
 const cellContextMenu = (e: any) => {
+	if (props.disableCreation) return
 	console.log('cellContextMenu', e)
 	const target = e.e.target.classList.contains('.vuecal__cell-content')
 		? e.e.target
 		: e.e.target.closest('.vuecal__cell-content')
-	openTooltip(target)
+	openTooltip(target).then(() => {
+		selectedDate.value = e.date
+		isCreateNewData.value = true
+	})
+
 	console.log(target)
 }
 const isShowMore = ref(false)
-const hiddenEvents = ref<TEvent[]>([])
+const hiddenEvents = ref<IEventData[]>([])
 const showMore = (data: any, clickEvent: any) => {
+	const isHiddenEventsShown =
+		hiddenEvents.value.length &&
+		data[0].start.getTime() === hiddenEvents.value[0].start.getTime()
+
+	if (isHiddenEventsShown) {
+		return closeTooltip()
+	}
 	console.log('showMore', data, clickEvent)
 	openTooltip(clickEvent.target).then(() => {
 		isShowMore.value = true
@@ -386,6 +428,14 @@ const showMore = (data: any, clickEvent: any) => {
 }
 
 /* CUSTOM */
+.vuecal--week-view {
+	.vuecal__cell {
+		padding: 0 2px;
+	}
+	.vuecal__event {
+		border-radius: 4px;
+	}
+}
 .vuecal--month-view {
 	.vuecal__cell-content {
 		height: 76px;
@@ -394,26 +444,18 @@ const showMore = (data: any, clickEvent: any) => {
 	.vuecal__cell-events {
 		display: none;
 	}
-	.event-start {
-		border-top-right-radius: 0;
-		border-bottom-right-radius: 0;
-		width: calc(100% + 3px);
-	}
-	.event-end {
-		border-top-left-radius: 0;
-		border-bottom-left-radius: 0;
-		margin-left: -2px;
-	}
-	.event-middle {
-		border-radius: 0;
-		margin-left: -2px;
-		width: calc(100% + 4px);
-	}
 }
-.vuecal__all-day-text span {
-	display: none;
+
+.vuecal__all-day {
+	.vuecal__cell {
+		padding: 2px;
+	}
+	.vuecal__all-day-text span {
+		display: none;
+	}
 }
 .vuecal__event {
+	border: 1px solid transparent;
 	background-color: #f6f7f9;
 	&:hover {
 		background-color: #f0f2f5;
@@ -425,11 +467,42 @@ const showMore = (data: any, clickEvent: any) => {
 }
 .new-data {
 	background-color: #ffefed;
+	border: 1px solid transparent;
 	&:hover {
 		background-color: #ffe8e5;
 	}
 	.vuecal__event-resize-handle {
 		background-color: #ffd0c8;
 	}
+	&.vuecal__event--focus {
+		border-color: #ff5e46;
+	}
+}
+
+.event-start,
+.vuecal__event.event-start {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+	width: calc(100% + 3px);
+}
+.vuecal__event.event-start,
+.vuecal__event.event-middle {
+	border-right: 0;
+}
+.vuecal__event.event-end,
+.vuecal__event.event-middle {
+	border-left: 0;
+}
+.event-end,
+.vuecal__event.event-end {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	margin-left: -2px;
+}
+.event-middle,
+.vuecal__event.event-middle {
+	border-radius: 0;
+	margin-left: -2px;
+	width: calc(100% + 4px);
 }
 </style>
