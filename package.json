@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@popperjs/core": "^2.11.7",
+    "@vuepic/vue-datepicker": "^4.3.0",
+    "date-fns": "^2.29.3",
     "sass": "^1.60.0",
     "vue": "^3.2.47",
     "vue-cal": "^4.8.1"
