@@ -15,5 +15,7 @@ const Template = (args) => ({
 	template: '<CalendarTooltip v-bind="args" />',
 })
 
-export const General = Template.bind({})
-General.args = {}
+export const General: any = Template.bind({})
+General.args = {
+	selectedDate: new Date(),
+}
