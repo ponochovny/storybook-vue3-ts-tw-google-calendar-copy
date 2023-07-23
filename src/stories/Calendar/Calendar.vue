@@ -37,11 +37,11 @@
 			<transition>
 				<div
 					ref="centeredTooltip"
-					class="absolute bg-white p-6 rounded-xl shadow-lg max-w-sm max-h-96 z-10"
+					class="absolute bg-white p-6 rounded-xl shadow-lg max-w-[calc(100%/7_+_40px)] max-h-96 z-10 w-full"
 					:class="{ 'pointer-events-none': !isShowMore }"
 					v-show="isShowMore"
 				>
-					<div>popper tooltip contetn</div>
+					<div class="text-xs truncate mb-1">popper tooltip contetn</div>
 					<ul class="flex flex-col gap-1">
 						<li
 							v-for="event of hiddenEvents"
@@ -341,10 +341,15 @@ const onEventClick = (eventData: IEventData, clickEvent: any) => {
 	if (
 		!isSameDay(new Date(selectedDate.value), new Date(eventData.start)) &&
 		!isShowMoreEventClicked
-	)
+	) {
 		isShowMore.value = false
-	if (selectedEvent.value?.start === eventData.start && !isShowMoreEventClicked)
+	}
+	if (
+		selectedEvent.value?.start === eventData.start &&
+		!isShowMoreEventClicked
+	) {
 		return closeTooltip()
+	}
 	openTooltip(clickEvent.target).then(() => (selectedEvent.value = eventData))
 }
 const cellClick = (e: any) => {
