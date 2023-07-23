@@ -29,6 +29,8 @@
 							v-model="timeStart"
 							time-picker
 							:disabled="!isNew && !isEdit"
+							mode-height="120"
+							:clearable="false"
 						/>
 					</div>
 					<div class="flex flex-col gap-2">
@@ -37,6 +39,8 @@
 							v-model="timeEnd"
 							time-picker
 							:disabled="!isNew && !isEdit"
+							mode-height="120"
+							:clearable="false"
 						/>
 					</div>
 				</div>
@@ -61,6 +65,7 @@ import { IEventData, TEvent } from '../Calendar/helper/types'
 // import format from "date-fns/format";
 import VueDatePicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
+import { v4 as uuidv4 } from 'uuid'
 
 export default defineComponent({
 	name: 'CalendarTooltip',
@@ -77,7 +82,8 @@ const props = withDefaults(defineProps<Props>(), {
 	selectedDate: () => new Date(),
 })
 const emit = defineEmits<{
-	(e: 'save', data: TEvent): void
+	(e: 'create', data: TEvent): void
+	(e: 'edit', data: TEvent): void
 	(e: 'close'): void
 }>()
 const datepickerFormat = (date: Date) => {
@@ -104,12 +110,18 @@ const saveHandler = () => {
 	const endDate = new Date(
 		new Date(date.value).setHours(timeEnd.value.hours, timeEnd.value.minutes, 0)
 	)
-	emit('save', {
+	const data: TEvent = {
 		start: format(startDate, 'yyyy-MM-dd HH:mm'),
 		end: format(endDate, 'yyyy-MM-dd HH:mm'),
 		title: 'My new event',
 		class: 'new-data',
-	})
+		id: props.eventData?.id ?? uuidv4(),
+	}
+	if (isNew.value) {
+		emit('create', data)
+	} else {
+		emit('edit', data)
+	}
 }
 const cancelHandler = () => {
 	emit('close')
@@ -130,7 +142,7 @@ const setNewData = () => {
 	timeEnd.value = { hours: 0, minutes: 0, seconds: 0 }
 }
 const setData = (data: IEventData) => {
-	if (data.class !== 'new-data') {
+	if (!data.class.includes('new-data')) {
 		isNew.value = false
 		isEdit.value = false
 	} else {

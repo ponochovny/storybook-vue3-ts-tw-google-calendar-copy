@@ -4,6 +4,8 @@ export type TEvent = {
 	title?: string
 	allDay?: boolean
 	class?: 'new-data' | 'sequence'
+	_eid?: string
+	id: string
 }
 
 type TModifiedDate = {
@@ -18,6 +20,7 @@ export interface IEventData {
 	focused: boolean
 	title: string
 	_eid: string
+	id: string
 	segments: {
 		[key: string]: {
 			start: Date

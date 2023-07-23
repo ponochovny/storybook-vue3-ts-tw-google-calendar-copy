@@ -6,6 +6,10 @@
 			{{ cell.content }}
 		</span>
 		<div
+			v-if="newEvents && view.id === 'month'"
+			class="absolute right-2 top-2 w-[5px] h-[5px] rounded-full bg-[#FF5E46]"
+		></div>
+		<div
 			class="flex flex-col w-full gap-0.5 pt-8 text-gray-50"
 			v-if="sortedEvents.length && view.id === 'month'"
 		>
@@ -30,7 +34,12 @@
 					v-if="sortedEvents.length > 2"
 					type="button"
 					@click.stop="showMore(cell, sortedEvents, $event)"
-					class="text-[#FF5E46] text-ellipsis overflow-hidden whitespace-nowrap m-0 hover:text-[#FF5E46]/80"
+					class="truncate m-0"
+					:class="[
+						containsNewEvent()
+							? 'text-[#FF5E46] hover:text-[#FF5E46]/80'
+							: 'text-gray-400 hover:text-gray-400/80',
+					]"
 				>
 					+ {{ events.length - 2 }} MORE
 				</button>
@@ -71,6 +80,17 @@ const emit = defineEmits<{
 const sortedEvents = computed(() =>
 	props.events.sort((a, b) => (a.allDay === b.allDay ? 0 : a.allDay ? -1 : 1))
 )
+const newEvents = computed(
+	() => !!props.events.find((event) => event.class.includes('new-data'))
+)
+
+const containsNewEvent = (): boolean => {
+	const isTrue = props.events
+		.slice(2)
+		.find((el) => el.class.includes('new-data'))
+
+	return isTrue
+}
 
 const onEventClick = (eventData: IEventData, clickEvent: any) => {
 	//
