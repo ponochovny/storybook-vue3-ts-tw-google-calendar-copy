@@ -37,7 +37,7 @@
 			<transition>
 				<div
 					ref="centeredTooltip"
-					class="absolute bg-white p-6 rounded-xl shadow-lg max-w-[calc(100%/7_+_40px)] max-h-96 z-10 w-full"
+					class="absolute bg-white p-2 px-3 sm:p-6 rounded-xl shadow-lg max-w-[calc(100%/7_+_40px)] max-h-96 z-10 w-full"
 					:class="{ 'pointer-events-none': !isShowMore }"
 					v-show="isShowMore"
 				>
@@ -507,7 +507,8 @@ const showMore = (cell: any, events: IEventData[], clickEvent: any) => {
 .vuecal--month-view {
 	.vuecal__cell-content {
 		height: 76px;
-		width: 120px;
+		max-width: 120px;
+		width: 100%;
 	}
 	.vuecal__cell-events {
 		display: none;

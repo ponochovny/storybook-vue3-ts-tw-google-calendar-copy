@@ -1,7 +1,7 @@
 <template>
 	<div
 		@click.stop="onEventClick(event, $event)"
-		class="vuecal__event px-2 py-0.5 rounded text-[#8E9595] bg-[#F6F7F9] text-ellipsis whitespace-nowrap !text-left hover:bg-[#F0F2F5] hover:text-[#808384] transition-colors h-5 cursor-pointer"
+		class="vuecal__event px-2 py-0.5 rounded text-[#8E9595] bg-[#F6F7F9] truncate !text-left hover:bg-[#F0F2F5] hover:text-[#808384] transition-colors h-5 cursor-pointer"
 		:class="[
 			event.class,
 			allDayClass(),
@@ -15,11 +15,13 @@
 		]"
 		:title="event.title"
 	>
-		{{
-			event.allDay
-				? event.title
-				: event.start.format('H{am}') + '-' + event.end.format('H{am}')
-		}}
+		<p class="truncate">
+			{{
+				event.allDay
+					? event.title
+					: event.start.format('H{am}') + '-' + event.end.format('H{am}')
+			}}
+		</p>
 	</div>
 </template>
 
